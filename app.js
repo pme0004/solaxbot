@@ -1,15 +1,23 @@
 const TelegramBot = require('node-telegram-bot-api');
-
 const https = require('https');
+const sqlite3 = require('sqlite3').verbose();
+
+const db = new sqlite3.Database('datosusuario.db', (err) => {
+    if (err) {
+        console.error('Error al abrir la base de datos', err.message);
+    } else {
+        console.log('Conexión exitosa a la base de datos');
+    }
+});
 
 const token = '6916045132:AAHVuFGX7u1RcLMaApjrm-ZIcFerH07NMMk';
-
-
-const bot = new TelegramBot(token, { polling: true });
+var date= new Date();
 const tokensolax ="20240202031443435221510";
 const ns="SX9YKHKWHD";
-
 var apiUrl = 'https://www.solaxcloud.com/proxyApp/proxy/api/getRealtimeInfo.do?tokenId='+ tokensolax + '&sn='+ ns+'';
+
+const bot = new TelegramBot(token, { polling: true });
+
 bot.on('message', (msg) => {
     const chatId = msg.chat.id;
     fetch(apiUrl)
