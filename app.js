@@ -12,6 +12,7 @@ const db = new sqlite3.Database('datosusuario.db', (err) => {
 
 const token = '6916045132:AAHVuFGX7u1RcLMaApjrm-ZIcFerH07NMMk';
 var date= new Date();
+console.log(date);
 const tokensolax ="20240202031443435221510";
 const ns="SX9YKHKWHD";
 var apiUrl = 'https://www.solaxcloud.com/proxyApp/proxy/api/getRealtimeInfo.do?tokenId='+ tokensolax + '&sn='+ ns+'';
