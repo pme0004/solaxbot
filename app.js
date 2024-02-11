@@ -7,21 +7,20 @@ const { token, tokensolax, ns } = require('./config.js');
 module.exports = { token, tokensolax, ns };
 
 var start_date = new Date();
-start_date.setHours(1 , 0, 0, 0);
-var start_date_iso=start_date.toISOString();
+start_date.setHours(1, 0, 0, 0);
+var start_date_iso = start_date.toISOString().replace('Z', '');
 var end_date = new Date();
 end_date.setHours(24, 59, 59, 999);
-var end_date_iso= end_date.toISOString(0);
-console.log("la fecha es "+ start_date_iso + "   y   "+end_date_iso);
+var end_date_iso = end_date.toISOString().replace('Z', '');
+
+console.log("la fecha es " + start_date_iso + "   y   " + end_date_iso);
+
 var apiSolax = `https://www.solaxcloud.com/proxyApp/proxy/api/getRealtimeInfo.do?tokenId=${tokensolax}&sn=${ns}`;
 var apiREE = `https://apidatos.ree.es/es/datos/mercados/precios-mercados-tiempo-real?start_date=${start_date_iso}&end_date=${end_date_iso}&time_trunc=hour`;
 console.log(apiREE);
-
-console.log(token);
-
 const nombredb = 'datosusuario.db';
 
-
+//conexion a la base de datos
 const db = new sqlite3.Database(nombredb, (err) => {
     if (err) {
         console.error(err.message);
@@ -37,20 +36,40 @@ bot.start((ctx) => {
 });
 
 bot.command('help', (ctx) => {
-    ctx.reply('Los comandos disponibles son: \n\n/pvpc: Muestra el precio de la luz en tiempo real. \n\n/produccion: Muestra el estado de tu instalación solar fotovoltaica.');
+    ctx.reply('Los comandos disponibles son: \n\n/pvpc: Muestra el precio de la luz en tiempo real. \n\n/produccion: Muestra el estado de tu instalación solar fotovoltaica.  \n\n/cuenta: Información y borrado de cuenta.');
     let userid = ctx.from.id;
     console.log(userid);
 
     // console.log(telegramId);
 });
 
+bot.command('cuenta', (ctx) => { 
+    ctx.reply("¿Qué quieres hacer?", {
+        reply_markup: {
+            inline_keyboard: [
+                [{ text: 'Información', callback_data: "info"},{ text: 'Borrar cuenta', callback_data: "borrar"}]
+            ]
+        }
+    });
+});
+
 bot.command('pvpc', (ctx) => {
     axios.get(apiREE)
-    .then(response => {
-        var luz = response.data;
-        console.log(luz);
-        ctx.reply(JSON.stringify(luz, null, 2)); //convirte el objeto a string
-    })
+        .then(response => {
+            var luzjson = response.data;
+            //console.log(JSON.stringify(luz, null, 2));
+            var preciospvpc = luzjson.included.find(item => item.type === "PVPC (€/MWh)").attributes.values;
+            console.log("Precios PVPC:");
+            preciospvpc.forEach(precio => {
+                console.log("Fecha y hora:", precio.datetime);
+                console.log("Valor:", precio.value);
+                
+                console.log();
+                ctx.reply(`Fecha y hora:  ${precio.datetime} \n\n Precio: ${precio.value}€/Mwh`); 
+                //convirte el objeto a string
+            });
+
+        })
 });
 
 bot.command('produccion', (ctx) => {
@@ -74,7 +93,7 @@ bot.command('produccion', (ctx) => {
                 .catch(error => {
                     console.error(error);
                 });
-                
+
         } else {
             // Usuario no registrado
             ctx.reply('Aun no te has registrado, para hacerlo escribe /registro');
