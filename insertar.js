@@ -11,20 +11,20 @@ const db = new sqlite3.Database(nombredb, (err) => {
         console.log(`Base de datos '${nombredb}' creada exitosamente`);
     }
 });
+var telegramid = 6355233624;
+var tokensolax = "esto es un token de prueba";
+var ns = "esto es un numero de serie de prueba";
 
-
-function creartabla(){
-    db.run("CREATE TABLE IF NOT EXISTS usuarios (id integer primary key autoincrement, telegramid integer, tokensolax text, ns text)"
-    , (err) => {
+function insertarusuario(telegramid, tokensolax, ns){
+    db.run("INSERT INTO usuarios (telegramid, tokensolax, ns) VALUES (?, ?, ?)", [telegramid, tokensolax, ns], (err) => {
         if (err) {
-            console.error('Error al crear la tabla', err.message);
+            console.error('Error al insertar datos', err.message);
         } else {
-            console.log('Tabla "usuarios" creada exitosamente');
+            console.log('Datos insertados exitosamente');
         }
     });
 }
-
-creartabla();
+insertarusuario(telegramid, tokensolax, ns);
 
 db.close((err) => {
     if (err) {
