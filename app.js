@@ -4,6 +4,7 @@ const { https } = require('https');
 const sqlite3 = require('sqlite3').verbose();
 const axios = require('axios');
 const { token, tokensolax, ns } = require('./config.js');
+const { type } = require('os');
 module.exports = { token, tokensolax, ns };
 
 var start_date = new Date();
@@ -31,7 +32,7 @@ const db = new sqlite3.Database(nombredb, (err) => {
 const bot = new Telegraf(token);
 
 bot.start((ctx) => {
-    // console.log(ctx);
+    // console.log(typeof(ctx));
     ctx.reply('Bienvenido a SolaxBot! \n\nEl bot que te permite conocer el precio de la luz en tiempo real y el estado de tu instalación solar fotovoltaica. \n\nPara comenzar, escribe /help para ver los comandos disponibles.');
 });
 
@@ -39,21 +40,72 @@ bot.command('help', (ctx) => {
     ctx.reply('Los comandos disponibles son: \n\n/pvpc: Muestra el precio de la luz en tiempo real. \n\n/produccion: Muestra el estado de tu instalación solar fotovoltaica.  \n\n/cuenta: Información y borrado de cuenta.');
     let userid = ctx.from.id;
     console.log(userid);
-
-    // console.log(telegramId);
 });
 
-bot.command('cuenta', (ctx) => { 
+bot.command('/cuenta', (ctx) => {
+    //var idtelegram = Number(JSON.stringify(ctx.from.id,null, 2));
+    //console.log(idtelegram);
     ctx.reply("¿Qué quieres hacer?", {
         reply_markup: {
             inline_keyboard: [
-                [{ text: 'Información', callback_data: "info"},{ text: 'Borrar cuenta', callback_data: "borrar"}]
+                [{ text: 'Información', callback_data: "info" }, { text: 'Borrar cuenta', callback_data: "borrar" }]
             ]
         }
     });
+
+    bot.action(['info', 'borrar'], (ctx) => {
+        const usuarioAccion = ctx.callbackQuery.data;
+        //logica si el usuario quiere ver info
+        if (usuarioAccion === 'info') {
+            let idtelegram = Number(JSON.stringify(ctx.from.id, null, 2));
+            ctx.reply('Se mostrará la información de la cuenta');
+            db.get("Select * from usuarios where telegramid = ?", [idtelegram], (err, row) => {
+                if (err) {
+                    console.error('Error al ejecutar la consulta:', err);
+                    return ctx.reply('Ocurrió un error al verificar el usuario.');
+                } if (row) {
+                    // usuario ya resgistrado
+                    ctx.reply('¡El usuario está registrado en la base de datos!');
+                    ctx.reply("Tu id de usuario es: " + idtelegram);
+
+                } else {
+                    // Usuario no registrado
+                    ctx.reply('No te has registrado, por lo que no hemos almacenado información tuya. Para hacerlo escribe /registro');
+                }
+            }
+            )
+        };
+        //logica si el usuario desea borrar
+        if (usuarioAccion === 'borrar') {
+            let idtelegram = Number(JSON.stringify(ctx.from.id, null, 2));
+            db.get("select * FROM usuarios WHERE telegramid = ?", [idtelegram], (err, row) => {
+                if (err) {
+                    console.error('Error al ejecutar la consulta:', err);
+                } if (row) {
+                    ctx.replyWithMarkdownV2("Se borrará tu cuenta " + idtelegram + "\n\nEscribe *__Quiero borrar mi cuenta__* para confirmar");
+                    bot.hears('Quiero borrar mi cuenta', (ctx) => {
+                        ctx.reply('Borrando cuenta...');
+                        db.run("DELETE FROM usuarios WHERE telegramid = ?", [idtelegram], (err) => {
+                            if (err) {
+                                console.error('Error al borrar la cuenta:', err);
+                                return ctx.reply('Ocurrió un error al borrar la cuenta.');
+                            } else {
+                                ctx.reply('Cuenta borrada exitosamente');
+                            }
+                        });
+                    });
+                } else if (!row) {
+                    ctx.reply('no estas resgistrado no puedes borrar una cuenta que no existe.');
+                }
+            });
+            //  ctx.reply('Escribe "Quiero borrar mi cuenta" para confirmar');
+
+        }
+    });
+
 });
 
-bot.command('pvpc', (ctx) => {
+bot.command('/pvpc💰', (ctx) => {
     axios.get(apiREE)
         .then(response => {
             var luzjson = response.data;
@@ -63,16 +115,16 @@ bot.command('pvpc', (ctx) => {
             preciospvpc.forEach(precio => {
                 console.log("Fecha y hora:", precio.datetime);
                 console.log("Valor:", precio.value);
-                
+
                 console.log();
-                ctx.reply(`Fecha y hora:  ${precio.datetime} \n\n Precio: ${precio.value}€/Mwh`); 
+                ctx.reply(`Fecha y hora:  ${precio.datetime} \n\n Precio: ${precio.value}€/Mwh`);
                 //convirte el objeto a string
             });
 
         })
 });
 
-bot.command('produccion', (ctx) => {
+bot.command('produccion☀️', (ctx) => {
     //vamos a comprobar si el usuario esta registrado
     let telegramId = ctx.message.from.id;
     const consulta = "SELECT * FROM usuarios WHERE telegramid = ?";
@@ -102,7 +154,7 @@ bot.command('produccion', (ctx) => {
 
 });
 
-bot.command('registro', (ctx) => {
+bot.command('/registro🔑', (ctx) => {
     ctx.reply("Te vas a registrar, aceptas que se almace tu id, token de solax y NS?", {
         reply_markup: {
             inline_keyboard: [
@@ -142,5 +194,6 @@ bot.action(['Si', 'No'], (ctx) => {
     }
 
 });
+
 
 bot.launch();
