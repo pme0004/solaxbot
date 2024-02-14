@@ -27,8 +27,8 @@ const db = new sqlite3.Database(nombredb, (err) => {
 creartabla();*/
 
 var telegramId = 6355233624;
-var tokensolax = "tokencito";
-var ns = "nsolax";
+var tokensolax = "20240202031443435221510";
+var ns = "SX9YKHKWHD";
 insertarusuario(telegramId, tokensolax, ns);
 
 function insertarusuario(telegramid, tokensolax, ns){
@@ -42,7 +42,18 @@ db.run("INSERT INTO usuarios (telegramid, tokensolax, ns) VALUES (?, ?, ?)", [te
 
 }
 
-
+/*
+borrarfila(id=1);
+function borrarfila(tokensolax){
+    db.run("DELETE FROM usuarios WHERE id = ?", [id], (err) => {
+        if (err) {
+            console.error('Error al borrar la cuenta:', err);
+        } else {
+            console.log('Se han borrado los datos');
+        }
+    });
+}
+*/
 
 db.close((err) => {
     if (err) {
