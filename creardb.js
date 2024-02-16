@@ -12,8 +12,8 @@ const db = new sqlite3.Database(nombredb, (err) => {
     }
 });
 
-
-/*function creartabla(){
+/*
+function creartabla(){
     db.run("CREATE TABLE IF NOT EXISTS usuarios (id integer primary key autoincrement, telegramid integer, tokensolax text, ns text)"
     , (err) => {
         if (err) {
@@ -24,28 +24,28 @@ const db = new sqlite3.Database(nombredb, (err) => {
     });
 }
 
-creartabla();*/
+creartabla();
 
-var telegramId = 6355233624;
-var tokensolax = "20240202031443435221510";
+var tokensolax = "20230422192945984288033";
 var ns = "SX9YKHKWHD";
 insertarusuario(telegramId, tokensolax, ns);
 
 function insertarusuario(telegramid, tokensolax, ns){
-db.run("INSERT INTO usuarios (telegramid, tokensolax, ns) VALUES (?, ?, ?)", [telegramid, tokensolax, ns], (err) => {
-    if (err) {
-        console.error('Error al insertar datos', err.message);
-    } else {
-        console.log('Datos insertados exitosamente');
-    }
-});
-
+    db.run("INSERT INTO usuarios (telegramid, tokensolax, ns) VALUES (?, ?, ?)", [telegramid, tokensolax, ns], (err) => {
+        if (err) {
+            console.error('Error al insertar datos', err.message);
+        } else {
+            console.log('Datos insertados exitosamente');
+        }
+    });
+    
 }
+*/
+var telegramId = 5153846609;
 
-/*
-borrarfila(id=1);
-function borrarfila(tokensolax){
-    db.run("DELETE FROM usuarios WHERE id = ?", [id], (err) => {
+borrarfila(telegramId);
+function borrarfila(telegramId){
+    db.run("DELETE FROM usuarios WHERE telegramid = ?", [telegramId], (err) => {
         if (err) {
             console.error('Error al borrar la cuenta:', err);
         } else {
@@ -53,7 +53,7 @@ function borrarfila(tokensolax){
         }
     });
 }
-*/
+
 
 db.close((err) => {
     if (err) {

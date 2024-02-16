@@ -3,9 +3,8 @@ const { Markup } = require('telegraf');
 const { https } = require('https');
 const sqlite3 = require('sqlite3').verbose();
 const axios = require('axios');
-const { token, token_solax, ns_solax } = require('./config.js');
-const { type } = require('os');
-module.exports = { token, token_solax, ns_solax };
+const token_telegram = require('./config.js');
+const { existsSync } = require('fs');
 
 var start_date = new Date();
 start_date.setHours(1, 0, 0, 0);
@@ -16,11 +15,9 @@ var end_date_iso = end_date.toISOString().replace('Z', '');
 
 console.log("la fecha es " + start_date_iso + "   y   " + end_date_iso);
 
-var apiSolax = `https://www.solaxcloud.com/proxyApp/proxy/api/getRealtimeInfo.do?tokenId=${token_solax}&sn=${ns_solax}`;
 var apiREE = `https://apidatos.ree.es/es/datos/mercados/precios-mercados-tiempo-real?start_date=${start_date_iso}&end_date=${end_date_iso}&time_trunc=hour`;
-console.log(apiREE);
-const nombredb = 'datosusuario.db';
 
+const nombredb = 'datosusuario.db';
 //conexion a la base de datos
 const db = new sqlite3.Database(nombredb, (err) => {
     if (err) {
@@ -29,24 +26,30 @@ const db = new sqlite3.Database(nombredb, (err) => {
     console.log('Conectado a la base de datos SQLite.');
 });
 
-const bot = new Telegraf(token);
+const bot = new Telegraf(token_telegram);
+
+var token_solax_usuario = "";
+var ns_solax_usuario = "";
+
+
 
 bot.start((ctx) => {
     // console.log(typeof(ctx));
     ctx.reply('Bienvenido a SolaxBot! \n\nEl bot que te permite conocer el precio de la luz en tiempo real y el estado de tu instalación solar fotovoltaica. \n\nPara comenzar, escribe /help para ver los comandos disponibles.',
         Markup.keyboard([
             ['/help❓', '/pvpc💰'],
-            ['/produccion ☀️', '/registro 🔑 '],
+            ['/produccion ☀️', '/cuenta 🔑 '],
         ])
             .resize()
     );
 });
-
+//HELP
 bot.command('help', (ctx) => {
     ctx.reply('Los comandos disponibles son: \n\n/pvpc💰: Muestra el precio de la luz en tiempo real. \n\n/produccion☀️: Muestra el estado de tu instalación solar fotovoltaica.  \n\n/cuenta: Información y borrado de cuenta.');
     let userid = ctx.from.id;
 });
 
+//CUENTA
 bot.command('cuenta', (ctx) => {
     ctx.reply("¿Qué  gestión quieres hacer?", {
         reply_markup: {
@@ -60,58 +63,55 @@ bot.command('cuenta', (ctx) => {
     bot.action(['info', 'borrar'], (ctx) => {
         const usuarioAccion = ctx.callbackQuery.data;
         //se comprueba si el usuario esta registrado
-        let idtelegram = Number(JSON.stringify(ctx.from.id, null, 2));
-        db.get("Select * from usuarios where telegramid = ?", [idtelegram], (err, row) => {
+        ctx.deleteMessage();
+        let telegramId = Number(JSON.stringify(ctx.from.id, null, 2));
+        db.get("Select * from usuarios where telegramid = ?", [telegramId], (err, row) => {
             if (err) {
                 console.error('Error al ejecutar la consulta:', err);
                 return ctx.reply('Ocurrió un error al verificar el usuario.');
             } if (row) {
-                let usuarioregistrado = true;
-            } else {
-                let usuarioregistrado = false;
-            }
-        });
-        //logica si el usuario quiere ver info
-        if (usuarioAccion === 'info') {
-            ctx.reply('Se mostrará la información de la cuenta' + usuarioregistrado);
-            ctx.reply("Tu id de usuario es: " + idtelegram + "\n\nTu token de solax es: " + token_solax + "\n\nTu número de serie es: " + ns_solax);
-
-        } else {
-            // Usuario no registrado
-            ctx.reply('No te has registrado, por lo que no hemos almacenado información tuya. Para hacerlo escribe /registro');
-        }
-    });
-
-    //logica si el usuario desea borrar
-    if (usuarioAccion === 'borrar') {
-        let idtelegram = Number(JSON.stringify(ctx.from.id, null, 2));
-        //se comprueba si el usuario esta registrado
-        db.get("select * FROM usuarios WHERE telegramid = ?", [idtelegram], (err, row) => {
-            if (err) {
-                console.error('Error al ejecutar la consulta:', err);
-            } if (row) {//si esta registrado, se le ofrece borrar la cuenta
-                ctx.replyWithMarkdownV2("Se borrará tu cuenta " + idtelegram + "\n\nEscribe *__Quiero borrar mi cuenta__* para confirmar");
-                bot.hears('Quiero borrar mi cuenta', (ctx) => {//si escribe tal y como se pide que borre la cuenta se procede
-                    ctx.reply('Borrando cuenta...');
-                    db.run("DELETE FROM usuarios WHERE telegramid = ?", [idtelegram], (err) => {
+                if (usuarioAccion === 'info') {
+                    db.get("select tokensolax, ns from usuarios where telegramid = ?", [telegramId], (err, row) => {
                         if (err) {
-                            console.error('Error al borrar la cuenta:', err);
-                            return ctx.reply('Ocurrió un error al borrar la cuenta.');
-                        } else {
-                            ctx.reply('Se han borrado toddos tus datos');
+                            console.error('Error al ejecutar la consulta:', err);
+                            return ctx.reply('Ocurrió un error al verificar el usuario.');
+                        } if (row) {
+                            token_solax_usuario = row.tokensolax;
+                            ns_solax = row.ns;
                         }
                     });
-                });
+                    ctx.reply("Tu id de usuario es: " + telegramId + "\n\nTu token de solax es: " + token_solax_usuario + "\n\nTu número de serie es: " + ns_solax_usuario);
+
+                }
+
+                if (usuarioAccion === 'borrar') {
+                    //let idtelegram = Number(JSON.stringify(ctx.from.id, null, 2));
+                    ctx.replyWithMarkdownV2("Se borrará tu cuenta " + telegramId + "\n\nEscribe ``` Quiero borrar mi cuenta``` para confirmar");
+                    bot.hears('Quiero borrar mi cuenta', (ctx) => {//si escribe tal y como se pide que borre la cuenta se procede
+                        ctx.reply('Borrando cuenta...');
+                        db.run("DELETE FROM usuarios WHERE telegramid = ?", [telegramId], (err) => {
+                            if (err) {
+                                console.error('Error al borrar la cuenta:', err);
+                                return ctx.reply('Ocurrió un error al borrar la cuenta.');
+                            } else {
+                                ctx.reply('Se han borrado todos tus datos');
+                            }
+                        });
+                    });
+                }
+
             } else if (!row) {
-                ctx.reply('Aún no te has registrado, si quieres registarte escribe /registro');
+                if (usuarioAccion === 'info' || usuarioAccion === 'borrar') {
+                    ctx.reply('No estas registrado, registrate con /registro');
+                }
             }
         });
-
-    }
+    });
 });
 
 
 
+//PVPC
 bot.command('pvpc', (ctx) => {
     axios.get(apiREE)
         .then(response => {
@@ -143,6 +143,8 @@ bot.command('pvpc', (ctx) => {
         });
 });
 
+
+//PRODUCCION
 bot.command('produccion', (ctx) => {
     //vamos a comprobar si el usuario esta registrado
     let telegramId = ctx.message.from.id;
@@ -152,18 +154,26 @@ bot.command('produccion', (ctx) => {
             console.error('Error al ejecutar la consulta:', err);
             return ctx.reply('Ocurrió un error al verificar el usuario.');
         } if (row) {
-            // usuario ya resgistrado
-            //ctx.reply('¡El usuario está registrado en la base de datos!');
-            //API SOLAX AKI
-            axios.get(apiSolax)
-                .then(response => {
-                    var datos = response.data;
-                    console.log(datos);
-                    ctx.reply(JSON.stringify(datos, null, 2)); //convirte el objeto a string
-                })
-                .catch(error => {
-                    console.error(error);
-                });
+            // si el usuario ya esta resgistrado entonces buscamos su token y ns
+            db.get("select tokensolax, ns from usuarios where telegramid = ?", [telegramId], (err, row) => {
+                if (err) {
+                    console.error('Error al ejecutar la consulta:', err);
+                    return ctx.reply('Ocurrió un error al verificar el usuario.');
+                } if (row) {
+                    var token_solax = row.tokensolax;
+                    var ns_solax = row.ns;
+                    //API SOLAX AKI
+                    axios.get(`https://www.solaxcloud.com/proxyApp/proxy/api/getRealtimeInfo.do?tokenId=${token_solax}&sn=${ns_solax}`)
+                        .then(response => {
+                            var datos = response.data;
+                            console.log(datos);
+                            ctx.reply(JSON.stringify(datos, null, 2)); //convirte el objeto a string
+                        })
+                        .catch(error => {
+                            console.error(error);
+                        });
+                }
+            });
 
         } else {
             // Usuario no registrado
@@ -173,46 +183,62 @@ bot.command('produccion', (ctx) => {
 
 });
 
+//REGISTRO
 bot.command('registro', (ctx) => {
-    ctx.reply("Te vas a registrar, aceptas que se almace tu id, token de solax y NS?", {
-        reply_markup: {
-            inline_keyboard: [
-                [{ text: 'Si', callback_data: "Si" }, { text: 'No', callback_data: "No" }]
-            ]
-        }
-    });
-    bot.action(['Si', 'No'], (ctx) => {
-        const usuarioAcepta = ctx.callbackQuery.data;
-        ctx.deleteMessage();
+    let telegramId = ctx.message.from.id;
+    db.get("Select * from usuarios where telegramid = ?", [telegramId], (err, row) => {
+        if (err) {
+            console.error('Error al ejecutar la consulta:', err);
+            return ctx.reply('Ocurrió un error al verificar el usuario.');
+        } if (row) {
+            ctx.reply("ya estas registrado")
+        } else if (!row) {
 
-        if (usuarioAcepta === 'Si') {
-            ctx.reply('De acuerdo, introduce tu token de Solax');
-            // Variable para controlar si se debe escuchar el siguiente mensaje
-            let escucharSiguienteMensaje = true;
-
-            // Manejador de evento para el token de Solax
-            bot.on("text", (ctx) => {
-                if (escucharSiguienteMensaje) {
-                    const tokenuser = ctx.message.text;
-                    const telegramId = ctx.message.from.id;
-                    ctx.reply("Ahora introduce tu numero de serie");
-                    escucharSiguienteMensaje = false;
-
-                    // Manejador de evento para el número de serie
-                    bot.on("text", (ctx) => {
-                        const ns = ctx.message.text;
-                        console.log(tokenuser, ns, telegramId);
-                        ctx.reply(`Gracias por registrarte. Tu token es ${tokenuser} y tu número de serie es ${ns}`);
-                    });
+            ctx.reply("Te vas a registrar, aceptas que se almace tu id, token de solax y NS?", {
+                reply_markup: {
+                    inline_keyboard: [
+                        [{ text: 'Si', callback_data: "Si" }, { text: 'No', callback_data: "No" }]
+                    ]
                 }
             });
-        } else {
-            ctx.reply('De acuerdo, no te has registrado');
+            bot.action(['Si', 'No'], (ctx) => {
+                const usuarioAcepta = ctx.callbackQuery.data;
+                ctx.deleteMessage();
+
+                if (usuarioAcepta === 'Si') {
+                    ctx.reply('De acuerdo, introduce tu token de Solax \n\nhttps://telegra.ph/D%C3%B3nde-encuentro-el-token-02-15');
+                    bot.on("text", (ctx) => {
+                        const message = ctx.message.text;
+                        if (!token_solax_usuario) {
+                            token_solax_usuario = message;
+                            ctx.reply('Gracias, ahora escribe tu ns:');
+                        } else if (!ns_solax_usuario) {
+                            ns_solax_usuario = message;
+                            ctx.reply("Registrando tus datos...");
+                            db.run("INSERT INTO usuarios (telegramid, tokensolax, ns) VALUES (?, ?, ?)", [ctx.from.id, token_solax_usuario, ns_solax_usuario], (err) => {
+                                if (err) {
+                                    console.error('Error al insertar datos', err.message);
+                                } else {
+                                    ctx.reply(`Gracias por registrarte. Tu token es ${token_solax_usuario} y tu número de serie es ${ns_solax_usuario} \n\nYa puedes consultar tu /produccion`);
+                                }
+                            });
+                        }
+                    });
+
+                } else if (usuarioAcepta === 'No') {
+                    ctx.reply('De acuerdo, no te has registrado.');
+                }
+
+            });
+
+
         }
 
-    });
-});
 
+
+    });
+
+});
 
 
 bot.launch();
