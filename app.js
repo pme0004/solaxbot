@@ -4,7 +4,6 @@ const { https } = require('https');
 const sqlite3 = require('sqlite3').verbose();
 const axios = require('axios');
 const token_telegram = require('./config.js');
-const { existsSync } = require('fs');
 
 var start_date = new Date();
 start_date.setHours(1, 0, 0, 0);
@@ -77,17 +76,16 @@ bot.command('cuenta', (ctx) => {
                             return ctx.reply('Ocurrió un error al verificar el usuario.');
                         } if (row) {
                             token_solax_usuario = row.tokensolax;
-                            ns_solax = row.ns;
+                            ns_solax_usuario = row.ns;
+                            ctx.reply("Tu id de usuario es: " + telegramId + "\n\nTu token de solax es: " + token_solax_usuario + "\n\nTu número de serie es: " + ns_solax_usuario);
                         }
                     });
-                    ctx.reply("Tu id de usuario es: " + telegramId + "\n\nTu token de solax es: " + token_solax_usuario + "\n\nTu número de serie es: " + ns_solax_usuario);
 
                 }
 
                 if (usuarioAccion === 'borrar') {
-                    //let idtelegram = Number(JSON.stringify(ctx.from.id, null, 2));
-                    ctx.replyWithMarkdownV2("Se borrará tu cuenta " + telegramId + "\n\nEscribe ``` Quiero borrar mi cuenta``` para confirmar");
-                    bot.hears('Quiero borrar mi cuenta', (ctx) => {//si escribe tal y como se pide que borre la cuenta se procede
+                    ctx.replyWithMarkdownV2("Se borrará tu cuenta " + telegramId + "\n\nEscribe ``` quiero borrar mi cuenta ``` para confirmar");
+                    bot.hears('quiero borrar mi cuenta', (ctx) => {//si escribe tal y como se pide que borre la cuenta se procede
                         ctx.reply('Borrando cuenta...');
                         db.run("DELETE FROM usuarios WHERE telegramid = ?", [telegramId], (err) => {
                             if (err) {
@@ -230,11 +228,7 @@ bot.command('registro', (ctx) => {
                 }
 
             });
-
-
         }
-
-
 
     });
 
