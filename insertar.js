@@ -24,6 +24,7 @@ function insertarusuario(telegramid, tokensolax, ns){
         }
     });
 }
+
 insertarusuario(telegramid, tokensolax, ns);
 
 db.close((err) => {

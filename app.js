@@ -3,7 +3,8 @@ const { Markup } = require('telegraf');
 const { https } = require('https');
 const sqlite3 = require('sqlite3').verbose();
 const axios = require('axios');
-const token_telegram = require('./config.js');
+require('dotenv').config();
+const token_telegram = process.env.token_telegram;
 
 var start_date = new Date();
 start_date.setHours(1, 0, 0, 0);
@@ -42,10 +43,11 @@ bot.start((ctx) => {
             .resize()
     );
 });
+
 //HELP
 bot.command('help', (ctx) => {
     ctx.reply('Los comandos disponibles son: \n\n/pvpc💰: Muestra el precio de la luz en tiempo real. \n\n/produccion☀️: Muestra el estado de tu instalación solar fotovoltaica.  \n\n/cuenta: Información y borrado de cuenta.');
-    let userid = ctx.from.id;
+
 });
 
 //CUENTA
@@ -62,7 +64,7 @@ bot.command('cuenta', (ctx) => {
     bot.action(['info', 'borrar'], (ctx) => {
         const usuarioAccion = ctx.callbackQuery.data;
         //se comprueba si el usuario esta registrado
-        ctx.deleteMessage();
+        //ctx.deleteMessage();
         let telegramId = Number(JSON.stringify(ctx.from.id, null, 2));
         db.get("Select * from usuarios where telegramid = ?", [telegramId], (err, row) => {
             if (err) {
@@ -84,18 +86,21 @@ bot.command('cuenta', (ctx) => {
                 }
 
                 if (usuarioAccion === 'borrar') {
-                    ctx.replyWithMarkdownV2("Se borrará tu cuenta " + telegramId + "\n\nEscribe ``` quiero borrar mi cuenta ``` para confirmar");
-                    bot.hears('quiero borrar mi cuenta', (ctx) => {//si escribe tal y como se pide que borre la cuenta se procede
-                        ctx.reply('Borrando cuenta...');
-                        db.run("DELETE FROM usuarios WHERE telegramid = ?", [telegramId], (err) => {
-                            if (err) {
-                                console.error('Error al borrar la cuenta:', err);
-                                return ctx.reply('Ocurrió un error al borrar la cuenta.');
-                            } else {
-                                ctx.reply('Se han borrado todos tus datos');
-                            }
-                        });
+                    let telegramId = ctx.from.id;
+                    ctx.reply("Se borrará tu cuenta " + telegramId);
+                    setTimeout(() => {
+                    ctx.reply('Borrando cuenta...');
+                    db.run("DELETE FROM usuarios WHERE telegramid = ?", [telegramId], (err) => {
+                        if (err) {
+                            console.error('Error al borrar la cuenta:', err);
+                            ctx.reply('Ocurrió un error al borrar la cuenta.');
+                            console.log(telegramId + " esta intentando borrar su cuenta pero ha habido un error");
+                        } else {
+                            ctx.reply('Se han borrado todos tus datos');
+                            console.log(telegramId + " ha borrado su cuenta");
+                        }
                     });
+                }, 2000);
                 }
 
             } else if (!row) {
@@ -128,15 +133,12 @@ bot.command('pvpc', (ctx) => {
                     var mes = fecha.getMonth() + 1;
                     var dia = fecha.getDate();
                     var horas = fecha.getHours();
-
-                    //ctx.reply(`Fecha y hora:  ${dia}-${mes}-${año} ${horas} horas  \n\n Precio: ${precio_kwh}€/Kwh`);
                     mensaje += `Fecha y hora:  ${dia}-${mes}-${año} ${horas} horas  \n\n Precio: ${precio_kwh}€/Kwh\n\n`;
 
                     index++;
                 }
                 ctx.reply(mensaje);
             }
-
             setTimeout(sendNextMessage, delay);
         });
 });
@@ -164,15 +166,26 @@ bot.command('produccion', (ctx) => {
                     axios.get(`https://www.solaxcloud.com/proxyApp/proxy/api/getRealtimeInfo.do?tokenId=${token_solax}&sn=${ns_solax}`)
                         .then(response => {
                             var datos = response.data;
-                            console.log(datos);
-                            ctx.reply(JSON.stringify(datos, null, 2)); //convirte el objeto a string
+                            var query_exitosa = datos.success;
+                            var valores = datos.result;
+                            if (query_exitosa === false) {
+                                ctx.reply("No se ha podido obtener la información de tu instalación. \n\nRevisa que tus datos sean correctos en /cuenta \n\nEl token tiene una validez de 6 meses, si ha caducado debes obtener uno nuevo en la web de solaxcloud.com");
+                            } else if (query_exitosa === true) {
+                                if (valores.powerdc1 === 0){
+                                    ctx.reply("🌚");
+                                } else if (valores.powerdc1 > 0){
+                                    ctx.reply("🌞");
+                                }
+                                setTimeout(() => {
+                                    ctx.reply(`🔱Datos de tu instalación🔱\n\n⚡️Generación DC: ${valores.powerdc1 + valores.powerdc2} W\n\n🔌Generación AC: ${valores.acpower} W\n\n🏠Consumo eléctrico: ${valores.feedinpower} W\n\n🔅Producción de hoy: ${valores.yieldtoday} kWh\n\n🔆Producción total: ${(valores.yieldtotal / 1000).toFixed(2)} MWh\n\n⚠️Voltaje AC: ${valores.vac1} V\n\n📈Frecuencia de red: ${valores.fac1} Hz\n\n🌡Temperatura: ${valores.temperature}ºC\n\n🕐Hora del registro: ${valores.uploadTime}`);
+                                }, 600);
+                            }
                         })
                         .catch(error => {
                             console.error(error);
                         });
                 }
             });
-
         } else {
             // Usuario no registrado
             ctx.reply('Aun no te has registrado, para hacerlo escribe /registro');
@@ -201,8 +214,7 @@ bot.command('registro', (ctx) => {
             });
             bot.action(['Si', 'No'], (ctx) => {
                 const usuarioAcepta = ctx.callbackQuery.data;
-                ctx.deleteMessage();
-
+                //ctx.deleteMessage();
                 if (usuarioAcepta === 'Si') {
                     ctx.reply('De acuerdo, introduce tu token de Solax \n\nhttps://telegra.ph/D%C3%B3nde-encuentro-el-token-02-15');
                     bot.on("text", (ctx) => {

@@ -12,7 +12,7 @@ const db = new sqlite3.Database(nombredb, (err) => {
     }
 });
 
-/*
+
 function creartabla(){
     db.run("CREATE TABLE IF NOT EXISTS usuarios (id integer primary key autoincrement, telegramid integer, tokensolax text, ns text)"
     , (err) => {
@@ -25,7 +25,7 @@ function creartabla(){
 }
 
 creartabla();
-
+/*
 var tokensolax = "20230422192945984288033";
 var ns = "SX9YKHKWHD";
 insertarusuario(telegramId, tokensolax, ns);
@@ -40,7 +40,7 @@ function insertarusuario(telegramid, tokensolax, ns){
     });
     
 }
-*/
+
 var telegramId = 5153846609;
 
 borrarfila(telegramId);
@@ -53,7 +53,7 @@ function borrarfila(telegramId){
         }
     });
 }
-
+*/
 
 db.close((err) => {
     if (err) {

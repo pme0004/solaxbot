@@ -13,6 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "axios": "^1.6.7",
+    "dotenv": "^16.4.4",
     "https": "^1.0.0",
     "sqlite3": "^5.1.7",
     "telegraf": "^4.15.3"
