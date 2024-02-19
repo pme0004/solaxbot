@@ -2,7 +2,7 @@
   "name": "solaxbot",
   "version": "1.0.0",
   "description": "Este bot de telegram se encarga de recoger datos a través de la API de Solax y mostrarselos al usuario",
-  "main": "index.js",
+  "main": "bot.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node app.js",

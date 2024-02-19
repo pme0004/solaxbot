@@ -120,29 +120,21 @@ bot.command('pvpc', (ctx) => {
         .then(response => {
             var luzjson = response.data;
             var preciospvpc = luzjson.included.find(item => item.type === "PVPC (€/MWh)").attributes.values;
-            var index = 0;
-            var delay = 1000; // Tiempo de retraso entre cada envío de mensaje (en milisegundos)
-
-            function sendNextMessage() {
-                let mensaje = '';
-                if (index < preciospvpc.length) {
-                    let precio = preciospvpc[index];
-                    let precio_kwh = (precio.value / 1000).toFixed(3);
-                    var fecha = new Date(precio.datetime);
-                    var año = fecha.getFullYear();
-                    var mes = fecha.getMonth() + 1;
-                    var dia = fecha.getDate();
-                    var horas = fecha.getHours();
-                    mensaje += `Fecha y hora:  ${dia}-${mes}-${año} ${horas} horas  \n\n Precio: ${precio_kwh}€/Kwh\n\n`;
-
-                    index++;
-                }
-                ctx.reply(mensaje);
-            }
-            setTimeout(sendNextMessage, delay);
+            
+            preciospvpc.forEach(precio => {  
+                    console.log("Fecha y hora:", precio.datetime);
+                    console.log("Valor:", precio.value);
+                        let precio_kwh = (precio.value / 1000).toFixed(3);
+                        var fecha = new Date(precio.datetime);
+                        var año = fecha.getFullYear();
+                        var mes = fecha.getMonth() + 1;
+                        var dia = fecha.getDate();
+                        var horas = fecha.getHours();
+                        var mensaje = `Fecha y hora:  ${dia}-${mes}-${año} ${horas} horas  \n\n Precio: ${precio_kwh}€/Kwh\n\n`;
+                        ctx.reply(mensaje);
+                });
         });
-});
-
+    });
 
 //PRODUCCION
 bot.command('produccion', (ctx) => {
