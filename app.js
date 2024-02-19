@@ -204,7 +204,7 @@ bot.command('registro', (ctx) => {
             console.error('Error al ejecutar la consulta:', err);
             return ctx.reply('Ocurrió un error al verificar el usuario.');
         } if (row) {
-            ctx.reply("ya estas registrado")
+            ctx.reply("Ya estás registrado")
         } else if (!row) {
 
             ctx.reply("Te vas a registrar, aceptas que se almace tu id, token de solax y NS?", {
@@ -223,7 +223,7 @@ bot.command('registro', (ctx) => {
                     ctx.reply('De acuerdo, introduce tu token de Solax \n\nhttps://telegra.ph/D%C3%B3nde-encuentro-el-token-02-15');
                     bot.on("text", (ctx) => {
                         const message = ctx.message.text;
-                        console.log(message);
+                        console.log("token"+message);
                         if (!token_solax_usuario) {
                             token_solax_usuario = message;
                             ctx.reply('Perfecto, ahora escribe tu ns:');
