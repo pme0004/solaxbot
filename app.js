@@ -177,7 +177,7 @@ bot.command('produccion', (ctx) => {
                                     ctx.reply("🌞");
                                 }
                                 setTimeout(() => {
-                                    ctx.reply(`🔱Datos de tu instalación🔱\n\n⚡️Generación DC: ${valores.powerdc1 + valores.powerdc2} W\n\n🔌Generación AC: ${valores.acpower} W\n\n🏠Consumo eléctrico: ${valores.feedinpower} W\n\n🔅Producción de hoy: ${valores.yieldtoday} kWh\n\n🔆Producción total: ${(valores.yieldtotal / 1000).toFixed(2)} MWh\n\n⚠️Voltaje AC: ${valores.vac1} V\n\n📈Frecuencia de red: ${valores.fac1} Hz\n\n🌡Temperatura: ${valores.temperature}ºC\n\n🕐Hora del registro: ${valores.uploadTime}`);
+                                    ctx.reply(`🔱Datos de tu instalación🔱\n\n⚡️Generación DC: ${valores.powerdc1 + valores.powerdc2} W\n\n🔌Generación AC: ${valores.acpower} W\n\n🏠Consumo eléctrico: ${valores.acpower-valores.feedinpower} W\n\n${valores.feedinpower > 0  ? "📤Exportación: "+ valores.feedinpower : "📥Importación: "+Math.abs(valores.feedinpower)} W\n\n🔅Producción de hoy: ${valores.yieldtoday} kWh\n\n🔆Producción total: ${(valores.yieldtotal / 1000).toFixed(2)} MWh\n\n⚠️Voltaje AC: ${valores.vac1} V\n\n📈Frecuencia de red: ${valores.fac1} Hz\n\n🌡Temperatura: ${valores.temperature}ºC\n\n🕐Hora del registro: ${valores.uploadTime}`);
                                 }, 600);
                             }
                         })
@@ -196,6 +196,8 @@ bot.command('produccion', (ctx) => {
 
 //REGISTRO
 bot.command('registro', (ctx) => {
+    var token_solax_usuario = "";
+    var ns_solax_usuario = "";
     let telegramId = ctx.message.from.id;
     db.get("Select * from usuarios where telegramid = ?", [telegramId], (err, row) => {
         if (err) {
@@ -214,14 +216,17 @@ bot.command('registro', (ctx) => {
             });
             bot.action(['Si', 'No'], (ctx) => {
                 const usuarioAcepta = ctx.callbackQuery.data;
-                //ctx.deleteMessage();
+                    ctx.deleteMessage();
                 if (usuarioAcepta === 'Si') {
+                     token_solax_usuario = null;
+                     ns_solax_usuario = null;
                     ctx.reply('De acuerdo, introduce tu token de Solax \n\nhttps://telegra.ph/D%C3%B3nde-encuentro-el-token-02-15');
                     bot.on("text", (ctx) => {
                         const message = ctx.message.text;
+                        console.log(message);
                         if (!token_solax_usuario) {
                             token_solax_usuario = message;
-                            ctx.reply('Gracias, ahora escribe tu ns:');
+                            ctx.reply('Perfecto, ahora escribe tu ns:');
                         } else if (!ns_solax_usuario) {
                             ns_solax_usuario = message;
                             ctx.reply("Registrando tus datos...");
@@ -229,7 +234,9 @@ bot.command('registro', (ctx) => {
                                 if (err) {
                                     console.error('Error al insertar datos', err.message);
                                 } else {
-                                    ctx.reply(`Gracias por registrarte. Tu token es ${token_solax_usuario} y tu número de serie es ${ns_solax_usuario} \n\nYa puedes consultar tu /produccion`);
+                                    setTimeout(() => {
+                                        ctx.reply(`Gracias por registrarte. Tu token es ${token_solax_usuario} y tu número de serie es ${ns_solax_usuario} \n\nYa puedes consultar tu /produccion`);
+                                    }, 500);
                                 }
                             });
                         }
