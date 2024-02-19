@@ -4,6 +4,7 @@ const { https } = require('https');
 const sqlite3 = require('sqlite3').verbose();
 const axios = require('axios');
 require('dotenv').config();
+const express = require("express");
 const token_telegram = process.env.token_telegram;
 
 var start_date = new Date();
@@ -12,6 +13,13 @@ var start_date_iso = start_date.toISOString().replace('Z', '');
 var end_date = new Date();
 end_date.setHours(24, 59, 59, 999);
 var end_date_iso = end_date.toISOString().replace('Z', '');
+
+
+const port = process.env.PORT || 3000; // Utiliza el puerto proporcionado por Heroku o el 3000 como puerto predeterminado
+app.listen(port, () => {
+  console.log(`La aplicación está escuchando en el puerto ${port}`);
+});
+
 
 console.log("la fecha es " + start_date_iso + "   y   " + end_date_iso);
 
