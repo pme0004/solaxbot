@@ -5,6 +5,11 @@ const sqlite3 = require('sqlite3').verbose();
 const axios = require('axios');
 require('dotenv').config();
 const express = require("express");
+/**
+ * Variable para el token de telegram.
+ * @type {string}
+ */
+
 const token_telegram = process.env.token_telegram;
 
 var start_date = new Date();
@@ -15,17 +20,31 @@ end_date.setHours(24, 59, 59, 999);
 var end_date_iso = end_date.toISOString().replace('Z', '');
 
 const app = express();
-const port = process.env.PORT || 3000; // Utiliza el puerto proporcionado por Heroku o el 3000 como puerto predeterminado
+
+/**
+ * Puerto en el que se va a ejecutar la aplicación.
+ * Si está disponible, utiliza el puerto proporcionado por Heroku; de lo contrario, utiliza el puerto 3000 como predeterminado.
+ * @type {number}
+ */
+const port = process.env.PORT || 3000;
+
+/**
+ * Inicia el servidor HTTP en el puerto especificado y muestra un mensaje en la consola.
+ * @param {number} port
+ * @returns {void}
+ */
 app.listen(port, () => {
   console.log(`La aplicación está escuchando en el puerto ${port}`);
 });
 
 
 console.log("la fecha es " + start_date_iso + "   y   " + end_date_iso);
+const nombredb = 'datosusuario.db';
+
+
 
 var apiREE = `https://apidatos.ree.es/es/datos/mercados/precios-mercados-tiempo-real?start_date=${start_date_iso}&end_date=${end_date_iso}&time_trunc=hour`;
 
-const nombredb = 'datosusuario.db';
 //conexion a la base de datos
 const db = new sqlite3.Database(nombredb, (err) => {
     if (err) {
@@ -34,13 +53,22 @@ const db = new sqlite3.Database(nombredb, (err) => {
     console.log('Conectado a la base de datos SQLite.');
 });
 
+db.run("CREATE TABLE IF NOT EXISTS usuarios (id integer primary key autoincrement, telegramid integer, tokensolax text, ns text)"
+    , (err) => {
+        if (err) {
+            console.error('Error al crear la tabla', err.message);
+        } else {
+            console.log('Tabla "usuarios" creada exitosamente');
+        }
+    });
+    
 const bot = new Telegraf(token_telegram);
 
 var token_solax_usuario = "";
 var ns_solax_usuario = "";
 
 
-
+//empieza el bot y saca el teclado
 bot.start((ctx) => {
     // console.log(typeof(ctx));
     ctx.reply('Bienvenido a SolaxBot! \n\nEl bot que te permite conocer el precio de la luz en tiempo real y el estado de tu instalación solar fotovoltaica. \n\nPara comenzar, escribe /help para ver los comandos disponibles.',
@@ -53,6 +81,11 @@ bot.start((ctx) => {
 });
 
 //HELP
+/**
+ * Maneja el comando 'help' para proporcionar información sobre los comandos disponibles.
+ * @param {Object} ctx
+ * @returns {void}
+ */
 bot.command('help', (ctx) => {
     ctx.reply('Los comandos disponibles son: \n\n/pvpc💰: Muestra el precio de la luz en tiempo real. \n\n/produccion☀️: Muestra el estado de tu instalación solar fotovoltaica.  \n\n/cuenta: Información y borrado de cuenta.');
 
@@ -194,7 +227,12 @@ bot.command('produccion', (ctx) => {
 
 });
 
-//REGISTRO
+/**
+ * Maneja el comando 'registro' para permitir que los usuarios se registren en el sistema.
+ * @param {Object} ctx - El contexto de la solicitud del bot.
+ * @returns {void}
+ */
+
 bot.command('registro', (ctx) => {
     var token_solax_usuario = "";
     var ns_solax_usuario = "";
